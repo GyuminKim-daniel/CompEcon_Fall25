@@ -52,7 +52,9 @@ Some of the most common commands you'll use are summarized in the table below.
 
 ## 4. Git and GitHub tutorial
 
-I have included a tutorial on using [Git and GitHub.com](https://github.com/jdebacker/CompEcon_Fall21/blob/main/Productivity/git_tutorial.pdf). Git is a powerful version control software that comes natively installed on many machines and is widely used. GitHub.com is the most widely used online platform for hosting open source projects and integrating with Git software. Git has a significant learning curve, but it is essential for large collaborations that involve software development.
+* [Git Tutorial](https://pslmodels.github.io/Git-Tutorial/content/intro.html)
+
+Git is a powerful version control software that comes natively installed on many machines and is widely used. GitHub.com is the most widely used online platform for hosting open source projects and integrating with Git software. Git has a significant learning curve, but it is essential for large collaborations that involve software development.
 
 | Functionality                                               | Git Command                                                      |
 |-------------------------------------------------------------|------------------------------------------------------------------|

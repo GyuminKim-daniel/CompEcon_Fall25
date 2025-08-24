@@ -68,7 +68,7 @@ Class Participation                |   10   |    10%   |
 |----------|-----|-------------------------------------|--------|
 | Aug. 19  | T  | Work Flow, Productivity Software    |        |
 | Aug. 21  | Th   | Using AI in Research ([Zoom link](https://sc-edu.zoom.us/j/81390476463))    |        |
-| Aug. 26  | T  | Python/OOP                          | PS #1  |
+| Aug. 26  | T  | Python/OOP                          | [PS #1](https://github.com/jdebacker/CompEcon_Fall25/blob/main/Productivity/PS1.pdf)  |
 | Aug. 28  | Th   | Python/OOP                          |        |
 | Sept. 2  | T  | Visualization tools |     PS #2   |
 | Sept. 4   | Th  | Numerical Optimization Theory       |   |
