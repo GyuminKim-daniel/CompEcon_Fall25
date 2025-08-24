@@ -1,0 +1,147 @@
+\documentclass[letterpaper,12pt]{article}
+\usepackage{array}
+\usepackage{threeparttable}
+\usepackage{geometry}
+\geometry{letterpaper,tmargin=1in,bmargin=1in,lmargin=1.25in,rmargin=1.25in}
+\usepackage{fancyhdr,lastpage}
+\pagestyle{fancy}
+\lhead{}
+\chead{}
+\rhead{}
+\lfoot{}
+\cfoot{}
+\rfoot{\footnotesize\textsl{Page \thepage\ of \pageref{LastPage}}}
+\renewcommand\headrulewidth{0pt}
+\renewcommand\footrulewidth{0pt}
+\usepackage[format=hang,font=normalsize,labelfont=bf]{caption}
+\usepackage{listings}
+\lstset{frame=single,
+	language=Python,
+	showstringspaces=false,
+	columns=flexible,
+	basicstyle={\small\ttfamily},
+	numbers=none,
+	breaklines=true,
+	breakatwhitespace=true
+	tabsize=3
+}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{setspace}
+\usepackage{float,color}
+\usepackage[pdftex]{graphicx}
+\usepackage{hyperref}
+\hypersetup{colorlinks,linkcolor=red,urlcolor=blue}
+\theoremstyle{definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{acknowledgement}[theorem]{Acknowledgement}
+\newtheorem{algorithm}[theorem]{Algorithm}
+\newtheorem{axiom}[theorem]{Axiom}
+\newtheorem{case}[theorem]{Case}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{conclusion}[theorem]{Conclusion}
+\newtheorem{condition}[theorem]{Condition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{criterion}[theorem]{Criterion}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{derivation}{Derivation} % Number derivations on their own
+\newtheorem{example}[theorem]{Example}
+\newtheorem{exercise}[theorem]{Exercise}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{notation}[theorem]{Notation}
+\newtheorem{problem}[theorem]{Problem}
+\newtheorem{proposition}{Proposition} % Number propositions on their own
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{solution}[theorem]{Solution}
+\newtheorem{summary}[theorem]{Summary}
+%\numberwithin{equation}{section}
+\newcommand\ve{\varepsilon}
+\newcommand\boldline{\arrayrulewidth{1pt}\hline}
+
+\begin{document}
+	
+\begin{center}
+	\textbf{\large Problem Set 1} \\[2mm]
+\end{center}
+
+\begin{flushleft}
+	ECON833, Prof. Jason DeBacker \\ 
+	Gyumin Kim
+\end{flushleft}
+
+\vspace{5mm}
+
+\textbf{Q1. A brief summary of my interest in economics including in-text citations, a list of references, at least one equation, and at least figure.}\\[2mm]
+
+My research interest lies in identifying causal relationships within the context of service operations. I was first inspired by my former advisor, Hyunseok Lee, whose work focuses on retail operations and causal inference. His influence motivated me to pursue empirical research, particularly in uncovering causal relationships.
+
+To prepare myself, I took econometrics courses during my master’s program and gained hands-on experience with econometric tools such as Stata. Among the causal inference methods, I focused most deeply on Difference-in-Differences (DID) and Instrumental Variables (IV), both of which are widely used in operations management.\cite{Teck2017} While developing these technical skills, I also searched for a interesting research question. Because I had access to RFID fitting room data, I explored research topics related to fitting rooms. Around that time, I read a paper titled “Estimating the Stockout-Based Demand Spillover Effect in a Fashion Retail Setting” \cite{Li2023}. This paper applied the DID method to measure stockout-based size demand spillover effects in fashion retail settings and showed that incorporating these effects into transshipment policies could reduce substantial costs. Building on this idea, I assumed that such effects might be highly correlated with fitting room operations, and I began developing research question around them.
+
+Inspired by this study, I explored the DID method in greater depth and eventually applied it in my master’s thesis, where I used both DID and Difference-in-Difference-in-Differences (DDD) methods.).\\[2mm]
+
+ 
+\textbf{Difference-in-Differences(DID)}\\[2mm]
+
+ According to \cite{Teck2017}Teck et al. (2017), DID method is a powerful tool for estimating causal effect of the treatment, when the data are available for both the treatment and control groups in pre-and post-treatment periods. if there are observations on pre- and posttreatment periods for both the treatment and control group. It calculates the treatment effect by comparing the difference in the change in average outcomes over the two periods for the two groups. 
+ 
+ In this context, what we call causal effect is the treatment effect for the treatment group. Table 1 illustrates the basic settings of DID. We have two groups: The treatment group, which is affected by the treatment and the control group, which is not. Each group is observed in two periods:pre-treatment and post-treatment, allowing us to capture the effect of the intervention. 
+ However, simple comparison of the treatment and control group is not enough to identify a true causal relationships. To do so, we must rely on counterfactual. Therefore, causal effect is defined as the difference between observed outcomes of treatment group if they treated and counterfactual outcomes of the same group if they are not treated.(Joshua et al. 2015)\cite{joshua2015}
+ 
+ 
+    \begin{table}[H]
+ \centering
+ \caption{Matrix for understanding DID setting}
+ \[
+ \begin{array}{c|cc}
+ 	& \text{Pre-Treatment} & \text{Post-Treatment} \\ \hline
+ 	\text{Treatment Group}   & T_{pre} & T_{post} (T_{counterfactual})\\
+ 	\text{Control Group} & C_{pre} & C_{post} \\
+ \end{array}
+ \] 
+\end{table}
+
+   According to the lecture \cite{YouTube2023}, counterfactual outcomes for the treatment group can be written as $T_{\text{pre}} + (T_{\text{counterfactual}}-T_{\text{pre}})$. Here, $T_{\text{pre}}$ represents the average outcome of the treatment group befroe treatment, and $T_{\text{counterfactual}}$ represents what the outcome would have been in the post-treatment period if the group had not received the treatment. 
+  Since, counterfactual outcomes are not observable in real life, we approximate $T_{\text{counterfactual}}-T_{\text{pre}}$ using the observed change in the control group, $C_{post} - C_{pre}$. If this assumption holds, then the casual effect can be estimated with observed outcomes.  
+ 
+ \begin{center}
+ 	\textbf{\large Causal Effect = ($T_{post} - T_{pre}$)-($C_{post} - C_{pre}$)} \\[2mm]
+ \end{center}
+ 
+  \cite{Ashesh2023}This is known as "parallel trend assumption". Without validating or verifying this assumption either quantitatively or qualitatively, we cannot guarantee that estimated effect reflect a true causal relationship. If the assumption does not hold, the result may be biased or contaminated by other factors such as differences in the characteristics of the two groups.
+  
+  \cite{Teck2017}Given this setting, we can obtain the DID estimate of the treatment effect on outcome Y through the coefficient of $W_{I,T}$ in the regression. $\beta_{DID}$, which we are interested in, is calculated as above.
+
+\begin{equation*}
+	Y_{i,T_i} = \alpha + \beta_{DID} W_{iT_i} + \gamma G_i + \delta T_i + \epsilon_{iT_i}
+\end{equation*}
+
+
+  
+  \textbf{Fitting rooms and Difference-in-Differences-Differences(DDD)}\\[2mm]
+  
+   As I mentioned at the start, Li et al.(2023) motivated me to study the relationship between the stockout-based size spillover effect and the fitting room operations.
+  
+  According to Lee et al.(2021)\cite{Lee2021}, fitting rooms play significant role in consumer purchase decision, especially in searching information and evaluating alternatives. Compared to the other retail settings, customers who facing stockouts of their preferred size may choose different size of same clothing item. In such cases, customers may use the fitting rooms because they cannot try on the clothes in the middle of the stores. By allowing customers to confirm the fit of alternatives sizes, fitting room may increase confidence in the purchase decision.Therefore, the stockout-based size spillover effect could be larger as the more customer bring the item into the fitting rooms. 
+  
+  To examine this, We applied similar approach to Li et al.(2023), who studied such effect using shoes. However, since customers typically do not bring shoes into fitting rooms, we focused on jeans, where fitting room usage is more relevant. This allows us to directly test the relationship between the stockout-based size spillover effect and the fitting room operations.
+  
+ The treatment group is defined as jeans that are one size larger than size i when size-i jeans of product p are out of stock on day d in store s. The control group is defined as jeans that are two sizes larger under the same conditions. In addition, we created a new variable called “fitting rooms”, which captures the number of size-i jeans of product p that were brought into fitting rooms on day d in store s. Using these definitions, we applied a Difference-in-Difference-in-Differences (DDD) model, specified as follows: 
+
+\begin{equation*}
+	Y_{j,s,d} = \alpha + \beta_{DDD} W_{ijsd}*fittingrooms_j,s,d + \gamma G_i + \delta T_i + \epsilon_{iT_i}
+\end{equation*}
+
+This model still needs further development, and additional robustness tests are required to strengthen the results.
+
+In sum, through this research journey, I became deeply interested in econometrics, especially in causal inference methods within economics.
+
+
+\bibliographystyle{plain}
+\bibliography{references}   % without .bib extension
+
+
+	
+\end{document}
+
