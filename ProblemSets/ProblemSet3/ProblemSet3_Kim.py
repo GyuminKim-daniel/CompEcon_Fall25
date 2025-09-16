@@ -107,7 +107,11 @@ save_scatter(
 )
 
 # ----------------------------------------------------------------------
+<<<<<<< HEAD
 # 3. Daily traffic vs daily sales 
+=======
+# 3. Daily traffic vs sales per store-day
+>>>>>>> ccb4df1dcd2feef786093b8ce15733c026b53384
 # ----------------------------------------------------------------------
 daily = fitting.groupby(["eventday", "storecode"]).agg({
     "traffic": "mean",
