@@ -76,8 +76,8 @@ Class Participation                |   10   |    10%   |
 | Sept. 11 | Th  |  Optimizers, Root-Finders in Python  |      |
 | Sept. 16 | T   | Optimization Application: GMM  |       |
 | Sept. 18 | Th  | Two-Sided Matching Models       |        |
-| Sept. 23 | T   |    Econometrics in Python                 | PS #4  |
-| Sept. 25 | Th  | Programming in R                  |        |
+| Sept. 23 | T   |    Econometrics in Python                 |   |
+| Sept. 25 | Th  | Programming in R                  |   [PS #4](https://github.com/jdebacker/CompEcon_Fall25/blob/main/Optimization/PS4.pdf)     |
 | Sept. 30   | T   | Maximum Score Estimators                       |      |
 | Oct. 2   | Th   | Review/Catch up       |     PS #5   |
 | Oct. 7  | T  | No class, Fall Break                |        |

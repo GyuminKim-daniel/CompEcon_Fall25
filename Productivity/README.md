@@ -130,3 +130,4 @@ Jupyter notebooks capability will be automatically installed with your download 
 * [Git Basics](https://www.youtube.com/watch?v=U8GBXvdmHT4)
 * [Git Workflows](http://blog.endpoint.com/2014/05/git-workflows-that-work.html)
 * [Research Computing at USC](https://sc.edu/about/offices_and_divisions/division_of_information_technology/rc/index.php)
+* [AI Agents for Economics Research](https://www.nber.org/papers/w34202)
