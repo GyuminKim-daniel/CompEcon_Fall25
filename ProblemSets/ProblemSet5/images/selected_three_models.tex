@@ -1,0 +1,34 @@
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+ & DID & 3-way & Treat×Age \\
+\midrule
+C(OOS)[T.1.0] & -0.365** & -0.373** &  \\
+C(OOS)[T.1.0] (se) & (0.181) & (0.178) &  \\
+C(OOS)[T.1.0]:fit\_in &  & 0.031 &  \\
+C(OOS)[T.1.0]:fit\_in (se) &  & (0.259) &  \\
+C(treatment)[T.1.0] & 0.248 & 0.218 & 0.299 \\
+C(treatment)[T.1.0] (se) & (0.200) & (0.249) & (0.412) \\
+C(treatment)[T.1.0]:C(OOS)[T.1.0] & 0.548** & 0.418 &  \\
+C(treatment)[T.1.0]:C(OOS)[T.1.0] (se) & (0.264) & (0.259) &  \\
+C(treatment)[T.1.0]:C(OOS)[T.1.0]:fit\_in &  & 0.692* &  \\
+C(treatment)[T.1.0]:C(OOS)[T.1.0]:fit\_in (se) &  & (0.410) &  \\
+C(treatment)[T.1.0]:age &  &  & -0.002 \\
+C(treatment)[T.1.0]:age (se) &  &  & (0.003) \\
+C(treatment)[T.1.0]:fit\_in &  & 0.104 &  \\
+C(treatment)[T.1.0]:fit\_in (se) &  & (0.359) &  \\
+age & -0.011 & -0.016 & -0.051* \\
+age (se) & (0.016) & (0.016) & (0.027) \\
+fit\_in & 1.210*** & 1.102*** & 1.146*** \\
+fit\_in (se) & (0.191) & (0.286) & (0.218) \\
+price & 0.000 & 0.000 & 0.000* \\
+price (se) & (0.000) & (0.000) & (0.000) \\
+Observations & 3589 & 3589 & 1843 \\
+R-squared & 0.189 & 0.194 & 0.225 \\
+\bottomrule
+\end{tabular}
+
+\caption{Selected coefficients}
+\label{tab:selected_models}
+\end{table}
