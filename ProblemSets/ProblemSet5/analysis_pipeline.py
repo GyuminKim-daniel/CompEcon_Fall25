@@ -1,45 +1,44 @@
-"""Analysis pipeline: stock variable generation, plotting, estimation, and LaTeX export.
+# analysis_pipeline.py
+"""
+Analysis pipeline for ProblemSet5.
 
-This module provides concise, documented functions to:
- - generate in-stock/out-of-stock and treatment indicators,
- - combine sub datasets,
- - save bar / trend plots,
- - fit OLS with cluster-robust SEs using a uniform interface,
- - extract selected coefficients (including interactions),
- - build and export a LaTeX table of selected coefficients.
+Provides:
+ - generate_stock_variables(): create in-stock / out-of-stock / treatment flags
+ - concat_variants(): combine multiple variants and deduplicate
+ - save_barplot(), save_line_trend_by_age(): plotting helpers (saved to images/)
+ - fit_model(): fit OLS with cluster-robust SEs (uniform interface)
+ - extract_params(), build_coef_se_table(), export_table_to_tex(): build/export selected results
 
 Usage:
-    Import functions or run the script directly:
-        python analysis_pipeline.py
+    python analysis_pipeline.py
 """
+from pathlib import Path
+from typing import Any, Iterable, List, Tuple, Dict
 
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import statsmodels.formula.api as smf
 import matplotlib.pyplot as plt
-from pathlib import Path
-import sys
-from typing import Any, Dict, Iterable, List, Tuple
 
 
 # -------------------------
-# Configuration (relative paths)
+# Paths / configuration
 # -------------------------
-
-
-# Get the path to the ProblemSet5 folder (this script's parent)
 try:
     ROOT = Path(__file__).resolve().parent
 except NameError:
     ROOT = Path.cwd()
 
-# Navigate two levels up, then into the shared Data folder
-DATA = ROOT.parents[1] / "Data" / "Raw.dta"   # <- relative path to your Data folder
+# Default data path: two levels up then Data/Raw.dta (adjust if your repo differs)
+DATA = ROOT.parents[1] / "Data" / "Raw.dta"
 IMAGES = ROOT / "images"
 IMAGES.mkdir(exist_ok=True)
 
 
+# -------------------------
+# Data functions
+# -------------------------
 def generate_stock_variables(
     df: pd.DataFrame,
     stockout_size: Any = 78,
@@ -48,43 +47,23 @@ def generate_stock_variables(
     min_days: int = 18,
 ) -> pd.DataFrame:
     """
-    Produce stock / OOS / treatment indicators.
-
-    Logic (matches your description):
-      - `stockoutproduct` marks rows where size == stockout_size and stock == 0.
-      - For each (eventday, storecode, stylecode, color) we compute:
-          s_sum = sum(stockoutproduct)
-          t_sum = sum(treatmentproduct)   # size == treat_size & stock==0 (used for OOS logic)
-          c_sum = sum(controlproduct)     # size == control_size & stock==0 (used for OOS logic)
-      - OOS for that eventday-group:
-          OOS = 0  if s_sum + t_sum + c_sum == 0   (all in-stock)
-          OOS = 1  if s_sum == 1 and t_sum == 0 and c_sum == 0
-                   (i.e., size78 out while 80 & 82 in)
-          Otherwise OOS = NaN (will be filtered by min_days below)
-      - For treatment assignment across (storecode, stylecode, color):
-          treat_sum = sum(stockoutproduct)  # presence of any size78 stockout in that (store,style,color)
-          If treat_sum >= 1:
-              rows with size == treat_size  => treatment = 1
-              rows with size == control_size => treatment = 0
-          else treatment = NaN
-      - `in_stock_day` and `out_stock_day` count days with OOS==0 or OOS==1 per (store,style,size,color).
-        If either count < min_days, set OOS = NaN for that (store,style,size,color).
+    Create stock/out-of-stock and treatment indicators.
 
     Parameters
     ----------
-    df : pd.DataFrame
-        Input frame; must contain 'stock','size','eventday','storecode','stylecode','color'.
-    stockout_size, treat_size, control_size : scalar
-        Size codes for the three roles (trigger, treatment, control).
-    min_days : int
+    df
+        Input DataFrame. Required columns: 'stock','size','eventday','storecode','stylecode','color'.
+    stockout_size, treat_size, control_size
+        Size codes used to define trigger (stockout), treatment, and control products.
+    min_days
         Minimum number of in-stock or out-stock days required to keep OOS (default 18).
 
     Returns
     -------
     pd.DataFrame
-        A copy of df with added columns:
-          stockoutproduct, treatmentproduct, controlproduct,
-          s_sum, t_sum, c_sum, OOS, in_stock_day, out_stock_day, treat_sum, treatment
+        Copy of df augmented with:
+        stockoutproduct, treatmentproduct, controlproduct,
+        s_sum, t_sum, c_sum, OOS, in_stock_day, out_stock_day, treat_sum, treatment.
     """
     required = {"stock", "size", "eventday", "storecode", "stylecode", "color"}
     missing = required - set(df.columns)
@@ -93,34 +72,32 @@ def generate_stock_variables(
 
     d = df.copy()
 
-    # Indicator definitions
-    d["stockoutproduct"]  = ((d["stock"] == 0) & (d["size"] == stockout_size)).astype(int)
+    # Basic indicators
+    d["stockoutproduct"] = ((d["stock"] == 0) & (d["size"] == stockout_size)).astype(int)
     d["treatmentproduct"] = ((d["stock"] == 0) & (d["size"] == treat_size)).astype(int)
-    d["controlproduct"]   = ((d["stock"] == 0) & (d["size"] == control_size)).astype(int)
+    d["controlproduct"] = ((d["stock"] == 0) & (d["size"] == control_size)).astype(int)
 
-    # Sums by event-day group (used to define OOS)
+    # Sums by event-day group (eventday, storecode, stylecode, color)
     g_day = ["eventday", "storecode", "stylecode", "color"]
     d["s_sum"] = d.groupby(g_day)["stockoutproduct"].transform("sum")
     d["t_sum"] = d.groupby(g_day)["treatmentproduct"].transform("sum")
     d["c_sum"] = d.groupby(g_day)["controlproduct"].transform("sum")
 
-    # OOS logic: 0 if none out, 1 when size78 out and 80/82 not out
+    # OOS logic: 0 if all in-stock, 1 if trigger (stockout_size) out and others not out
     d["OOS"] = np.nan
     d.loc[(d["s_sum"] + d["t_sum"] + d["c_sum"]) == 0, "OOS"] = 0
     d.loc[(d["s_sum"] == 1) & (d["t_sum"] == 0) & (d["c_sum"] == 0), "OOS"] = 1
 
-    # Counts by (store,style,size,color) to apply min_days rule
+    # Counts by (storecode, stylecode, size, color)
     g_size = ["storecode", "stylecode", "size", "color"]
-    d["in_stock_day"]  = d.groupby(g_size)["OOS"].transform(lambda s: s.eq(0).sum())
+    d["in_stock_day"] = d.groupby(g_size)["OOS"].transform(lambda s: s.eq(0).sum())
     d["out_stock_day"] = d.groupby(g_size)["OOS"].transform(lambda s: s.eq(1).sum())
 
-    # If not enough days, mark OOS as missing (NaN)
+    # Apply min_days rule: not enough days -> mark OOS missing
     d.loc[d["in_stock_day"] < min_days, "OOS"] = np.nan
     d.loc[d["out_stock_day"] < min_days, "OOS"] = np.nan
 
-    # Treatment assignment by (storecode, stylecode, color):
-    # If any size78 stockout occurred in that (store,style,color), then
-    # mark size==treat_size rows as treatment=1 and size==control_size rows as treatment=0.
+    # Treatment assignment by (storecode, stylecode, color)
     g_group = ["storecode", "stylecode", "color"]
     d["treat_sum"] = d.groupby(g_group)["stockoutproduct"].transform("sum")
     d["treatment"] = np.nan
@@ -131,13 +108,19 @@ def generate_stock_variables(
 
 
 def concat_variants(dfs: Iterable[pd.DataFrame]) -> pd.DataFrame:
-    """Concatenate dataframes, drop exact duplicates, reset index."""
+    """
+    Vertically concatenate many DataFrame variants; drop exact duplicates.
+
+    Returns
+    -------
+    pd.DataFrame
+    """
     combined = pd.concat(list(dfs), ignore_index=True)
     return combined.drop_duplicates().reset_index(drop=True)
 
 
 # -------------------------
-# Plotting helpers
+# Plot helpers (save to images/)
 # -------------------------
 def save_barplot(
     df: pd.DataFrame,
@@ -148,7 +131,9 @@ def save_barplot(
     figsize: Tuple[int, int] = (8, 6),
     title: str = "",
 ):
-    """Save a seaborn barplot to outpath (creates directory if needed)."""
+    """
+    Save a seaborn barplot to disk.
+    """
     outpath.parent.mkdir(parents=True, exist_ok=True)
     plt.figure(figsize=figsize)
     sns.barplot(data=df, x=x, y=y, hue=hue)
@@ -168,7 +153,9 @@ def save_line_trend_by_age(
     outpath: Path = IMAGES / "trend.png",
     descending: bool = True,
 ):
-    """Save trend of mean(y_col) by age and group_col. Reverse x-axis if descending."""
+    """
+    Save a trend line of mean(y_col) by age and group_col to disk.
+    """
     outpath.parent.mkdir(parents=True, exist_ok=True)
     df2 = df.dropna(subset=[age_col, y_col, group_col])
     trend = df2.groupby([age_col, group_col])[y_col].mean().reset_index()
@@ -182,23 +169,15 @@ def save_line_trend_by_age(
 
 
 # -------------------------
-# Modeling: uniform fit/extract/export interface
+# Modeling utilities
 # -------------------------
 def fit_model(df: pd.DataFrame, formula: str, cluster_col: str = "id_dum"):
     """
-    Fit OLS with cluster-robust SEs.
+    Fit OLS (statsmodels) and return (result, df_model). Uses cluster-robust SEs.
 
-    The function:
-      - chooses required columns from a common set present in df,
-      - drops rows with NA in those required columns,
-      - converts common fixed-effect variables to category dtype on the modeling copy,
-      - fits OLS and returns (result, df_model).
-
-    Returns
-    -------
-    (result, df_model)
+    The function auto-detects a common set of columns and drops rows with NA in those columns.
     """
-    # common variables used in typical formulas
+    # common variables often used in our formulas
     common = [
         "ln_sales",
         "treatment",
@@ -218,30 +197,31 @@ def fit_model(df: pd.DataFrame, formula: str, cluster_col: str = "id_dum"):
     df_model = df.dropna(subset=required).copy()
     if df_model.empty:
         raise ValueError("No observations left after dropping missing values for required variables.")
+
+    # convert categorical columns to category dtype on model copy
     cats = ["treatment", "OOS", "store_dum", "style_dum", "size", "year", "month", "date", "color_dum"]
     for c in cats:
         if c in df_model.columns:
             df_model[c] = df_model[c].astype("category")
+
     model = smf.ols(formula=formula, data=df_model)
     result = model.fit(cov_type="cluster", cov_kwds={"groups": df_model[cluster_col]})
     return result, df_model
 
 
-def extract_params(res, substrings: List[str]) -> pd.DataFrame:
+def extract_params(result, substrings: List[str]) -> pd.DataFrame:
     """
-    Return DataFrame of coef, se, t, p for params whose names contain any substring.
-    Substring matching is case-insensitive.
+    Return DataFrame with coef, se, t, p for params whose names contain any substring (case-insensitive).
     """
-    names = [n for n in res.params.index if any(s.lower() in n.lower() for s in substrings)]
-    df = pd.DataFrame(
+    names = [n for n in result.params.index if any(s.lower() in n.lower() for s in substrings)]
+    return pd.DataFrame(
         {
-            "coef": res.params.loc[names],
-            "se": res.bse.loc[names],
-            "t": res.tvalues.loc[names],
-            "p": res.pvalues.loc[names],
+            "coef": result.params.loc[names],
+            "se": result.bse.loc[names],
+            "t": result.tvalues.loc[names],
+            "p": result.pvalues.loc[names],
         }
     )
-    return df
 
 
 def _stars(p: float) -> str:
@@ -256,26 +236,21 @@ def _stars(p: float) -> str:
 
 def build_coef_se_table(results: List, model_names: List[str], var_substrings: List[str]) -> pd.DataFrame:
     """
-    Build DataFrame showing selected coefficients and standard errors (with stars).
+    Build a DataFrame table of selected coefficients (with significance stars) for multiple models.
 
-    The table format: for each selected parameter we produce two rows:
-      - coef (with significance stars)
-      - (se)
-    Additional rows: Observations and R-squared.
+    Rows: param name, param (se), repeated for each param, then Observations and R-squared.
     """
     selected = []
     for res in results:
         for name in res.params.index:
-            if any(s.lower() in name.lower() for s in var_substrings):
-                if name not in selected:
-                    selected.append(name)
+            if any(s.lower() in name.lower() for s in var_substrings) and name not in selected:
+                selected.append(name)
     selected = sorted(selected)
 
     rows = []
     idx = []
     for pname in selected:
-        coef_row = []
-        se_row = []
+        coef_row, se_row = [], []
         for res in results:
             if pname in res.params.index:
                 pval = res.pvalues[pname]
@@ -284,10 +259,8 @@ def build_coef_se_table(results: List, model_names: List[str], var_substrings: L
             else:
                 coef_row.append("")
                 se_row.append("")
-        rows.append(coef_row)
-        idx.append(pname)
-        rows.append(se_row)
-        idx.append(pname + " (se)")
+        rows.append(coef_row); idx.append(pname)
+        rows.append(se_row); idx.append(pname + " (se)")
 
     table = pd.DataFrame(rows, index=idx, columns=model_names)
     nobs_row = [int(getattr(r, "nobs", np.nan)) for r in results]
@@ -298,7 +271,9 @@ def build_coef_se_table(results: List, model_names: List[str], var_substrings: L
 
 
 def export_table_to_tex(table: pd.DataFrame, outpath: Path, caption: str = "Regression results", label: str = "tab:results"):
-    """Save the DataFrame as a LaTeX table inside a table environment (escape underscores)."""
+    """
+    Save a DataFrame as a LaTeX table inside a table environment at `outpath`.
+    """
     outpath.parent.mkdir(parents=True, exist_ok=True)
     latex_tab = table.to_latex(escape=True, na_rep="", column_format="l" + "r" * (table.shape[1]))
     latex = f"\\begin{{table}}[htbp]\n\\centering\n{latex_tab}\n\\caption{{{caption}}}\n\\label{{{label}}}\n\\end{{table}}\n"
@@ -307,35 +282,15 @@ def export_table_to_tex(table: pd.DataFrame, outpath: Path, caption: str = "Regr
 
 
 # -------------------------
-# Script flow when executed directly
+# Main pipeline
 # -------------------------
-if __name__ == "__main__":
-    # 1) load data
-      from pathlib import Path
-import sys
+def _run_pipeline():
+    """Minimal runnable pipeline used when script is called directly."""
+    if not DATA.exists():
+        raise FileNotFoundError(f"Data file not found at expected path: {DATA}")
 
-# Find the directory this script is in
-try:
-    ROOT = Path(__file__).resolve().parent
-except NameError:
-    ROOT = Path.cwd()
-
-# Move two folders up from ProblemSet5 to reach CompEcon_Fall25, then into Data/
-DATA = ROOT.parents[1] / "Data" / "Raw.dta"
-IMAGES = ROOT / "images"
-IMAGES.mkdir(exist_ok=True)
-
-# Verify path and load data
-if not DATA.exists():
-    print(f"\n❌ Data file not found at expected path:\n  {DATA}", file=sys.stderr)
-    print("Please ensure Raw.dta is located in:\n  CompEcon_Fall25/Data/\n", file=sys.stderr)
-    raise FileNotFoundError(f"Missing data file: {DATA}")
-else:
-    print(f"✅ Loading data from: {DATA}")
     df1 = pd.read_stata(DATA)
 
-
-    # 2) generate variants and combine
     combos = [
         (78, 80, 82),
         (80, 82, 86),
@@ -346,30 +301,31 @@ else:
     dfs = [generate_stock_variables(df1, *c, min_days=18) for c in combos]
     df_combined = concat_variants(dfs)
 
-    # 3) save plots
+    # Plots
     save_barplot(df_combined, x="OOS", y="ln_sales", hue="treatment", outpath=IMAGES / "LogSales.png", title="Log Sales by OOS and Treatment")
     save_barplot(df_combined, x="OOS", y="fit_in", hue="treatment", outpath=IMAGES / "Fittingroomvisits.png", title="Fitting Room Visits by OOS and Treatment")
     save_line_trend_by_age(df_combined[df_combined["OOS"] == 0], age_col="age", y_col="ln_sales", group_col="treatment", outpath=IMAGES / "SalesTrend.png", descending=True)
 
-    # 4) Fit three models (uniformly)
+    # Models
     did_formula = "ln_sales ~ C(treatment) * C(OOS) + fit_in + age + price + C(store_dum) + C(style_dum) + C(size) + C(year) + C(month) + C(date) + C(color_dum)"
     res_did, _ = fit_model(df_combined, did_formula, cluster_col="id_dum")
 
     three_way_formula = "ln_sales ~ C(treatment) * C(OOS) * fit_in + age + price + C(store_dum) + C(style_dum) + C(size) + C(year) + C(month) + C(date) + C(color_dum)"
     res_3way, _ = fit_model(df_combined, three_way_formula, cluster_col="id_dum")
 
-    # restrict to OOS==0 and fit treatment×age model
     df_oos0 = df_combined[df_combined["OOS"] == 0].copy()
     res_ta, _ = fit_model(df_oos0, "ln_sales ~ C(treatment) * age + fit_in + price + C(store_dum) + C(style_dum) + C(size) + C(year) + C(month) + C(date) + C(color_dum)", cluster_col="id_dum")
 
-    # 5) build and export a LaTeX table with selected variables and interactions
+    # Export selected coefficients to LaTeX
     models = [res_did, res_3way, res_ta]
     names = ["DID", "3-way", "Treat×Age"]
-    vars_of_interest = ["treatment", "OOS", "fit_in", "price", "age", ":"]  # ':' helps catch interactions
+    vars_of_interest = ["treatment", "OOS", "fit_in", "price", "age", ":"]  # ':' catches interactions
     table = build_coef_se_table(models, names, vars_of_interest)
     export_table_to_tex(table, IMAGES / "selected_three_models.tex", caption="Selected coefficients", label="tab:selected_models")
 
-    # print summaries (optional)
-    print(res_did.summary())
-    print(res_3way.summary())
-    print(res_ta.summary())
+    # Print brief summary
+    print("Saved images and exported LaTeX table.")
+
+
+if __name__ == "__main__":
+    _run_pipeline()
