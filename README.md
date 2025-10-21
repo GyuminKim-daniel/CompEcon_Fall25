@@ -85,9 +85,9 @@ Class Participation                |   10   |    10%   |
 | Oct. 14  | T  | Machine Learning     |        |
 | Oct. 16  | Th   | Machine Learning     |    [PS #6](https://github.com/jdebacker/CompEcon_Fall25/blob/main/Matching/PS6.pdf)     |
 | Oct. 21  | T  | Machine Learning     |  |
-| Oct. 23  | Th   | Dynamic Programming                 |        |
-| Oct. 28  | T  | Dynamic Programming                 |     PS #7   |
-| Oct. 30   | Th   | Dynamic Programming                       |   |
+| Oct. 23  | Th   | Machine Learning                 |        |
+| Oct. 28  | T  | Dynamic Programming                 |      |
+| Oct. 30   | Th   | Dynamic Programming              |  [PS #7](https://github.com/jdebacker/CompEcon_Fall25/blob/main/MachineLearning/PS7.pdf)   |
 | Nov. 4   | T  | Discrete Choice Dynamic Programming      |         |
 | Nov. 6  | Th   | TBD    |      |
 | Nov. 11  | T  | Simulated Method of Moments          |        |
