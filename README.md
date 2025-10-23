@@ -99,7 +99,7 @@ Class Participation                |   10   |    10%   |
 | Dec. 2   | T   | Overlapping Generations Models      |        |
 | Dec. 4   | Th   | Overlapping Generations Models      | PS # 9       |
 |          |     |                                     |        |
-| Dec. 11  | Th   | No Final Exam - **final project due**         |   |
+| Dec. 11  | Th   | No Final Exam - **final project due**         |  [Final Project](https://github.com/jdebacker/CompEcon_Fall25/blob/main/FinalProject.pdf) |
 
 
 ## Helpful Links ##
