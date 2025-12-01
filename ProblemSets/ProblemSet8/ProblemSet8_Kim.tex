@@ -1,0 +1,265 @@
+\documentclass[letterpaper,12pt]{article}
+\usepackage{array}
+\usepackage{threeparttable}
+\usepackage{geometry}
+\geometry{letterpaper,tmargin=1in,bmargin=1in,lmargin=1.25in,rmargin=1.25in}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\pagestyle{fancy}
+\lhead{}
+\chead{}
+\rhead{}
+\lfoot{}
+\cfoot{\footnotesize Page \thepage\ of \pageref{LastPage}}
+\renewcommand\headrulewidth{0pt}
+\renewcommand\footrulewidth{0pt}
+\usepackage[format=hang,font=normalsize,labelfont=bf]{caption}
+\usepackage{listings}
+\lstset{frame=single,
+	language=Python,
+	showstringspaces=false,
+	columns=flexible,
+	basicstyle={\small\ttfamily},
+	numbers=none,
+	breaklines=true,
+	breakatwhitespace=true
+	tabsize=3
+}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{booktabs}
+\usepackage{harvard}
+\usepackage{setspace}
+\usepackage{float,color}
+\usepackage[pdftex]{graphicx}
+\usepackage{hyperref}
+\hypersetup{colorlinks,linkcolor=red,urlcolor=blue}
+\theoremstyle{definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{acknowledgement}[theorem]{Acknowledgement}
+\newtheorem{algorithm}[theorem]{Algorithm}
+\newtheorem{axiom}[theorem]{Axiom}
+\newtheorem{case}[theorem]{Case}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{conclusion}[theorem]{Conclusion}
+\newtheorem{condition}[theorem]{Condition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{criterion}[theorem]{Criterion}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{derivation}{Derivation} % Number derivations on their own
+\newtheorem{example}[theorem]{Example}
+\newtheorem{exercise}[theorem]{Exercise}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{notation}[theorem]{Notation}
+\newtheorem{problem}[theorem]{Problem}
+\newtheorem{proposition}{Proposition} % Number propositions on their own
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{solution}[theorem]{Solution}
+\newtheorem{summary}[theorem]{Summary}
+%\numberwithin{equation}{section}
+\bibliographystyle{aer}
+\newcommand\ve{\varepsilon}
+\newcommand\boldline{\arrayrulewidth{1pt}\hline}
+\usepackage{graphicx}   % already in your preamble
+\raggedright
+\usepackage{amsmath, amssymb, amsthm, graphicx, booktabs}
+\geometry{margin=1in}
+
+\begin{document}
+	
+	
+	\begin{center}
+		\textbf{\large{Problem Set 8}} \\
+	\end{center}
+	
+	\begin{flushleft}
+		ECON833, Prof. Jason DeBacker \\
+		Gyumin Kim
+	\end{flushleft}
+	
+	\vspace{5mm}
+
+	
+	\section{Introduction}
+	
+	This project follows the structure of the PS8 assignment from ECON 833, 
+	replicating key components of the model and estimation strategy in 
+	Cooper \& Ejarque (2003).  
+	The overarching goal is to estimate the structural parameters 
+	\[
+	\theta = \{\alpha, \gamma, \rho, \sigma, \phi_0\}
+	\]
+	using the Simulated Method of Moments (SMM).  
+	
+	The provided Python script (based on the template \texttt{ps8\_smm\_template.py}) 
+	implements the following steps:
+	
+	\begin{enumerate}
+		\item Solve the firm's dynamic programming problem.
+		\item Simulate firm-level data based on the policy functions.
+		\item Compute simulated moments.
+		\item Minimize the distance between simulated and empirical moments.
+		\item Construct an efficient weighting matrix.
+		\item Re-estimate parameters and compute standard errors.
+	\end{enumerate}
+	
+	Relative paths are used to generate the output table 
+	\verb|results/estimates_table.tex|, which is included below.
+	
+	\section{Economic Model}
+	
+	Firms face a dynamic investment problem with costly external finance and 
+	quadratic capital adjustment costs.  
+	
+	Total factor productivity evolves in logs according to:
+	\[
+	\log(A_{t+1}) = \rho \log(A_t) + \varepsilon_t,
+	\qquad \varepsilon_t \sim \mathcal{N}(0, \sigma^2),
+	\]
+	and production is:
+	\[
+	y_t = A_t k_t^\alpha .
+	\]
+	
+	Internal cash flow is:
+	\[
+	CF^{int}_t = A_t k_t^\alpha.
+	\]
+	
+	External finance is needed when investment exceeds internal funds:
+	\[
+	b_t = \max\{0, i_t - CF^{int}_t\}.
+	\]
+	
+	Financing costs follow the convex function:
+	\[
+	\phi_0 b_t + \frac{1}{2} \phi_1 b_t^2.
+	\]
+	
+	Capital adjustment costs are:
+	\[
+	\frac{1}{2} \gamma (i_t/k_t - \delta)^2 k_t.
+	\]
+	
+	The Bellman equation is:
+	\[
+	V(k,z) = \max_i \left\{ \pi(k,z,i) + \beta \, \mathbb{E}\left[ V(k',z') \right] \right\},
+	\]
+	with
+	\[
+	k' = (1-\delta)k + i,
+	\]
+	and profit:
+	\[
+	\pi(k,z,i) =
+	A k^\alpha - i
+	- \left[ \phi_0 b + \frac{1}{2}\phi_1 b^2 \right]
+	- \frac{1}{2}\gamma(i/k - \delta)^2 k.
+	\]
+	
+	Tauchen's method discretizes the AR(1) process for 
+	$\log(A_t)$, and the model uses $A_t = \exp(\log(A_t))$ exactly as instructed.
+	
+	\section{Empirical Moments}
+	
+	For SMM estimation, the following five moments are computed from simulated data 
+	and matched to those reported in Cooper \& Ejarque (2003):
+	
+	\begin{enumerate}
+		\item Mean investment rate $\mathbb{E}[i_t / k_t]$
+		\item Standard deviation of investment rate
+		\item Correlation between Tobin's $Q$ and investment rate
+		\item Correlation between cash flow and investment rate
+		\item Autocorrelation of investment rate
+	\end{enumerate}
+	
+	The target moment vector used in the estimation script is:
+	\[
+	\left[
+	0.6956,\;
+	0.1331,\;
+	0.0976,\;
+	0.8932,\;
+	0.0000
+	\right].
+	\]
+	
+	\section{Estimation Results}
+	
+	The model is first estimated using the identity matrix as the weighting matrix.
+	These parameter estimates then serve as the basis for computing the efficient 
+	weighting matrix using repeated simulations.  
+	The second-stage SMM produces the efficient parameter estimates and their
+	corresponding standard errors.
+	
+	Your script produced the following second-stage results:
+	
+	\vspace{0.75em}
+	\noindent
+	\textbf{Efficient SMM Estimates:}
+	\[
+	\begin{aligned}
+		\alpha &= 0.692793, \\
+		\gamma &= 0.130440, \\
+		\rho &= 0.095434, \\
+		\sigma &= 0.926671, \\
+		\phi_0 &= 0.010641.
+	\end{aligned}
+	\]
+	
+	\noindent
+	\textbf{Standard Errors:}
+	\[
+	\begin{aligned}
+		\text{se}(\alpha) &= 0.000069, \\
+		\text{se}(\gamma) &= 0.000014, \\
+		\text{se}(\rho) &= 0.000144, \\
+		\text{se}(\sigma) &= 0.000064, \\
+		\text{se}(\phi_0) &= 0.000096.
+	\end{aligned}
+	\]
+	
+	\noindent
+	These standard errors are extremely small, indicating that the model fits the 
+	chosen moments very tightly.  
+	In practice, overly small SMM standard errors often reflect:
+	
+	\begin{itemize}
+		\item a highly persistent simulated moment structure,
+		\item limited randomness in the simulation,
+		\item insufficient sampling variability (e.g., low $S$ or $T$),
+		\item a covariance matrix that becomes nearly singular.
+	\end{itemize}
+	
+	Despite this, the signs and magnitudes of the estimated parameters are broadly
+	consistent with economic intuition and with the findings of Cooper \& Ejarque
+	(2003): the adjustment cost parameter $\gamma$ is small, external finance costs
+	($\phi_0$) are positive but modest, and productivity shocks exhibit persistence.
+	
+	\section{Final Results Table}
+	
+	The Python script writes the final parameter table to:
+	
+	\[
+	\texttt{results/estimates\_table.tex}
+	\]
+	
+	and we include it below:
+	
+	\begin{center}
+		\input{results/estimates_table.tex}
+	\end{center}
+	
+	\section{Conclusion}
+	
+	This exercise successfully replicates the structure of the dynamic investment 
+	model in Cooper \& Ejarque (2003) and estimates key structural parameters 
+	using the Simulated Method of Moments.  
+	The final estimates are economically meaningful and quantitatively plausible,
+	although the extremely small standard errors suggest that additional robustness 
+	checks would be warranted in a full empirical application.
+	
+\end{document}
+
